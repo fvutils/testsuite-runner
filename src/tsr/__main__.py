@@ -3,18 +3,25 @@ Created on Sep 24, 2019
 
 @author: ballance
 '''
+from argparse import ArgumentParser
 import os
 import sys
-from argparse import ArgumentParser
+
 from tsr import messaging
+from tsr.cfg_reader import CfgReader
+from tsr.messaging import verbose_note, error, note
 from tsr.registry import Registry
 from tsr.run_ctxt import RunCtxt
+from tsr.subprocess_cmd_runner import SubprocessCmdRunner
+import asyncio
+
 
 _registry = None
+_cmd_runner = None
 
 def common_init(args):
     """Performs initialization used by all tasks"""
-    global _registry
+    global _registry, _cmd_runner
     
     verbosity = 0 if args.v is None else args.v
     messaging.set_verbosity(verbosity)
@@ -22,31 +29,88 @@ def common_init(args):
     _registry = Registry()
     _registry.load()
     
+    _cmd_runner = SubprocessCmdRunner()
+    
     pass
 
 def build_run_init(args, plusargs):
-    ctxt = RunCtxt()
     """Performs common initialization needed for build and run actions"""
     common_init(args)
     
-    # TODO: 
+    ctxt = RunCtxt()
+    
+    cwd = os.getcwd()
+    ctxt.launch_dir = cwd
+    
+    if "TSR_RUNDIR" in os.environ.keys():
+        ctxt.rundir = os.environ["TSR_RUNDIR"]
+        
+    if args.rundir is not None:
+        ctxt.rundir = args.rundir
+        
+    if ctxt.rundir is None:
+        ctxt.rundir = os.path.join(cwd, "rundir")
+    
+    # Check for characteristics that we recognize
+    if not os.path.isfile(os.path.join(cwd, "scripts", "Makefile")):
+        raise Exception("scripts/Makefile does not exist")
+    
+    # Get a default for the project name
+    ctxt.project = os.path.basename(os.path.dirname(cwd))
+    
+    if os.path.join(cwd, ".tsr"):
+        verbose_note("Reading project-specific configuration")
+        CfgReader.read_cfg(os.path.join(cwd, ".tsr"), ctxt)
+        
+    if args.engine is not None:
+        ctxt.engine = args.engine
+
+    if ctxt.engine is not None:
+        note("Running with engine " + ctxt.engine)
+        engine_info = _registry.get_engine(ctxt.engine)
+        
+        if engine_info is None:
+            error("No engine named \"" + ctxt.engine + "\" is available")
+            note("Available engines:")
+            for e in _registry.engines:
+                e.load_info()
+                print("    " + e.name + " - " + e.description)
+            raise Exception("Engine \"" + ctxt.engine + "\" doesn't exist")
+        engine_info.load_info()
+        ctxt.engine_info = engine_info
+    else:
+        note("No engine specified")
+        
+    for tool in ctxt.tools:
+        tool_info = _registry.get_tool(tool)
+        
+        if tool_info is None:
+            raise Exception("No tool named \"" + tool + "\"")
+    
     
     return ctxt
 
-def build(args, plusargs):
+async def build(args, plusargs):
+    global _cmd_runner
+    ctxt = build_run_init(args, plusargs)
+    
+    build_cmd = ["make", "-f", 
+        os.path.join(ctxt.launch_dir, "scripts", "Makefile")]
+    
+    await _cmd_runner.queue(0, build_cmd, cwd=ctxt.rundir)
+    
+    pass
+
+async def runtest(args, plusargs):
     ctxt = build_run_init(args, plusargs)
     pass
 
-def runtest(args, plusargs):
-    ctxt = build_run_init(args, plusargs)
-    pass
-
-def regress(args, plusargs):
+async def regress(args, plusargs):
     ctxt = build_run_init(args, plusargs)
     
     pass
 
-def config_mkfiles(args, plusargs):
+async def config_mkfiles(args, plusargs):
     pkg_dir = os.path.dirname(os.path.abspath(__file__))
     
     print(os.path.join(pkg_dir, "mkfiles"))
@@ -62,8 +126,10 @@ def get_parser():
     build_cmd.set_defaults(func=build)
     build_cmd.add_argument("-v", action="count",
          help="Enables verbose output")
-    build_cmd.add_argument("--tool", 
-        help="Specifies the tool to target")
+    build_cmd.add_argument("--engine", "-e",
+        help="Specifies the engine to target")
+    build_cmd.add_argument("--rundir", "-r",
+        help="Specifies the run directory")
     
     runtest_cmd = subparser.add_parser("runtest",
         help="Runs a single test")
@@ -80,6 +146,8 @@ def get_parser():
         help="Specifies the engine to run")
     runtest_cmd.add_argument("test",
         help="Specifies the test to run")
+    runtest_cmd.add_argument("--rundir", "-r",
+        help="Specifies the run directory")
     
     regress_cmd = subparser.add_parser("regress",
         help="Runs a collection of tests")
@@ -96,6 +164,8 @@ def get_parser():
         help="Specifies the primary engine to run")
     regress_cmd.add_argument("--max_par", "-j",
         help="Specifies the number of jobs to run in parallel")
+    regress_cmd.add_argument("--rundir", "-r",
+        help="Specifies the run directory")
     
     config_mkfiles_cmd = subparser.add_parser("config-mkfiles",
         help="Provides information about TSR")
@@ -120,9 +190,11 @@ def main(args=None):
             i += 1
             
     parser = get_parser()
-    
+
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
     args = parser.parse_args()
-    args.func(args, plusargs)
+    loop.run_until_complete(args.func(args, plusargs))
 
 if __name__ == "__main__":
     main()

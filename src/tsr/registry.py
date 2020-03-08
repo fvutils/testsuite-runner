@@ -38,8 +38,21 @@ class Registry(object):
         
         pass
     
+    def get_engine(self, name):
+        for e in self.engines:
+            if e.name == name:
+                return e 
+            
+        return None
+    
+    def get_tool(self, name):
+        for e in self.tools:
+            if e.name == name:
+                return e 
+            
+        return None
+    
     def load(self, load_info=False):
-        
         for pp in self.pythonpath:
             print("pp=" + pp)
             
@@ -69,11 +82,13 @@ class Registry(object):
                         name = basename[len("engine_"):]
                         verbose_note("found engine named \"" + name + "\"")
                         info = EngineInfo(name, os.path.join(dir, f))
+                        info.rgy = self
                         self.engines.append(info)
                     elif f.startswith("tool_"):
                         name = basename[len("tool_"):]
                         verbose_note("found tool named \"" + name + "\"")
                         info = ToolInfo(name, os.path.join(dir, f))
+                        info.rgy = self
                         self.tools.append(info)
                     else:
                         verbose_note("ignore makefile " + f, 2)

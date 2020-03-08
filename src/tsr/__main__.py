@@ -8,31 +8,42 @@ import sys
 from argparse import ArgumentParser
 from tsr import messaging
 from tsr.registry import Registry
+from tsr.run_ctxt import RunCtxt
 
 _registry = None
 
-def init_registry():
-    pkg_dir = os.path.dirname(os.path.abspath(__file__))
+def common_init(args):
+    """Performs initialization used by all tasks"""
+    global _registry
+    
+    verbosity = 0 if args.v is None else args.v
+    messaging.set_verbosity(verbosity)
+    
     _registry = Registry()
-
-    _registry.load_mkfiles_dir(os.path.join(pkg_dir, "mkfiles"))
+    _registry.load()
     
     pass
 
+def build_run_init(args, plusargs):
+    ctxt = RunCtxt()
+    """Performs common initialization needed for build and run actions"""
+    common_init(args)
+    
+    # TODO: 
+    
+    return ctxt
+
 def build(args, plusargs):
+    ctxt = build_run_init(args, plusargs)
     pass
 
 def runtest(args, plusargs):
-    # First, get verbosity taken care of
-    messaging.set_verbosity(args.v)
-    init_registry()
+    ctxt = build_run_init(args, plusargs)
     pass
 
 def regress(args, plusargs):
-    # First, get verbosity taken care of
-    messaging.set_verbosity(args.v)
+    ctxt = build_run_init(args, plusargs)
     
-    init_registry()
     pass
 
 def config_mkfiles(args, plusargs):
@@ -41,15 +52,16 @@ def config_mkfiles(args, plusargs):
     print(os.path.join(pkg_dir, "mkfiles"))
 
 def get_parser():
-    parser = ArgumentParser()
+    parser = ArgumentParser(prog="tsr")
     subparser = parser.add_subparsers()
     subparser.required = True
+    subparser.dest = 'command'
     
     build_cmd = subparser.add_parser("build",
         help="Performs compilation/build")
     build_cmd.set_defaults(func=build)
     build_cmd.add_argument("-v", action="count",
-        help="Enables verbose output")
+         help="Enables verbose output")
     build_cmd.add_argument("--tool", 
         help="Specifies the tool to target")
     
@@ -106,7 +118,7 @@ def main(args=None):
             del args[i]
         else:
             i += 1
-                            
+            
     parser = get_parser()
     
     args = parser.parse_args()

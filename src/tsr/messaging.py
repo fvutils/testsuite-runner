@@ -7,6 +7,7 @@ Created on Mar 7, 2020
 _verbosity = 0
 
 def set_verbosity(verbosity):
+    global _verbosity
     _verbosity = verbosity
     
 def get_verbosity():
@@ -16,14 +17,14 @@ def note(msg):
     print("Note: " + msg)
     
 def verbose_note(msg, verbosity=1):
-    if verbosity >= _verbosity:
+    if _verbosity >= verbosity:
         print("Note: " + msg)
         
 def warn(msg):
     print("Warning: " + msg)
     
 def verbose_warn(msg, verbosity=1):
-    if verbosity >= _verbosity:
+    if _verbosity >= verbosity:
         print("Warning: " + msg)
         
 def error(msg):

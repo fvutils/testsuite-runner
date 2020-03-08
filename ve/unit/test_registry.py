@@ -10,7 +10,7 @@ from tsr.messaging import set_verbosity
 class TestRegistry(TsrTestCase):
     
     def test_smoke(self):
-        set_verbosity(2)
+        set_verbosity(0)
         
         rgy = Registry()
         rgy.load()

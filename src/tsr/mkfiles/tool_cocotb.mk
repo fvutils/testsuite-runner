@@ -50,6 +50,13 @@ build-cocotb-libs :
 	$(Q)$(MAKE) -f $(SIMSCRIPTS_MKFILES_DIR)/cocotb_libs.mk \
 		USER_DIR=$(BUILD_DIR)/cocotb \
                 -j1 vpi-libs
+                
+cocotb-info:
+	@echo "Enables cocotb support in HDL simulator engines"
+
+cocotb-plusargs:
+	@echo ""
+	
 		
 endif
 

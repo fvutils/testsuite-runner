@@ -40,5 +40,11 @@ gen-pybfms :
 	$(Q)$(TSR_PYTHON) -m pybfms generate -l $(PYBFMS_LANGUAGE) \
 		$(foreach m,$(PYBFMS_BFM_MODULES),-m $(m))
 
+pybfms-info:
+	@echo "Enables PyBFMS support in simulator engines"
+
+pybfms-plusargs:
+	@echo ""
+		
 endif
 

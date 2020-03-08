@@ -1,4 +1,9 @@
 
+User-Specified Variables
+========================
+
+- TSR_RUNDIR    -- Specifies the rundir to use 
+
 Common
 ======
 

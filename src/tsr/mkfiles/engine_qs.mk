@@ -16,7 +16,11 @@
 #* Compile rules
 #********************************************************************
 
+TSR_MKFILES_DIR:=$(shell $(TSR_PYTHON) -m tsr config-mkfiles)
+
 ifneq (1,$(RULES))
+
+include $(TSR_MKFILES_DIR)/hdlsim_common.mk
 
 # Take QUESTA_HOME if set. Otherwise, probe from where executables are located
 ifeq (,$(QUESTA_HOME))
@@ -315,5 +319,17 @@ endif
 UCDB_FILES := $(foreach	test,$(call get_plusarg,TEST,$(PLUSARGS)),$(RUN_ROOT)/$(test)/cov.ucdb)
 cov_merge:
 	vcover merge $(RUN_ROOT)/$(UCDB_NAME) $(UCDB_FILES)
+	
+qs-info:
+	@echo "Supports the QuestaSim HDL Simulator engine"
+	
+qs-plusargs: hdlsim-plusargs
+	@echo "+tool.questa.codecov    - Enables code coverage"
+	@echo "+tool.questa.ucdb=%s    - Specifies the name of the merged UCDB file"
+	@echo "+tool.questa.valgrind   - Runs Questa under valgrind"
+	@echo "+tool.questa.gdb        - Runs Questa under gdb"
+	@echo "+tool.questa.xprop      - Enables xprop"
+	
+include $(TSR_MKFILES_DIR)/hdlsim_common.mk
 	
 endif

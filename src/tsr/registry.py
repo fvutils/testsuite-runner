@@ -13,6 +13,7 @@ from tsr.tool_info import ToolInfo
 import subprocess
 from _io import StringIO
 import cmd
+from tsr.plusarg_info import PlusargInfo
 
 
 class Registry(object):
@@ -37,7 +38,7 @@ class Registry(object):
         
         pass
     
-    def load(self):
+    def load(self, load_info=False):
         
         for pp in self.pythonpath:
             print("pp=" + pp)
@@ -45,6 +46,12 @@ class Registry(object):
         
         for mkfile_dir in self.mkfile_dirs:
             self._load_mkfiles_dir(mkfile_dir)
+            
+        if load_info:
+            for info in self.engines:
+                info.load_info()
+            for info in self.tools:
+                info.load_info()
 
     
     def _load_mkfiles_dir(self, dir):
@@ -71,9 +78,9 @@ class Registry(object):
                     else:
                         verbose_note("ignore makefile " + f, 2)
 
-                if info is not None:
-                    self._load_mkfile_description(info)
-                    self._load_mkfile_plusargs(info)
+    def _load_info(self, info):
+        self._load_mkfile_description(info)
+        self._load_mkfile_plusargs(info)
                     
     def _run_make(self, args):
         cmd = ["make", "TSR_PYTHON=" + sys.executable]
@@ -85,31 +92,42 @@ class Registry(object):
 
     def _load_mkfile_description(self, info):
         cmd = ["RULES=1", "-f", info.mkfile, info.name + "-info"]
+        
+        verbose_note("Querying description for \"" + info.name + "\"")
 
         try:        
             out = self._run_make(cmd)
-            print("Info output=" + out.decode())
             info.description = out.decode().strip()
+            verbose_note("  Description: \"" + info.description + "\"")
         except Exception as e:
             error("Failed to load description from " + info.mkfile + "(" + str(e) + ")")
-        
-        pass
     
     def _load_mkfile_plusargs(self, info):
         cmd = ["RULES=1", "-f", info.mkfile, info.name + "-plusargs"]
 
+        verbose_note("Querying plusargs supported by \"" + info.name + "\"")
         try:        
             out = self._run_make(cmd)
-            print("Plusargs output=" + out.decode())
             for line in out.decode().splitlines():
                 line = line.strip()
                 if line.startswith("+"):
+                    if line.find('- '):
+                        desc = line[line.find('- ')+1:].strip()
+                        line = line[:line.find('- ')]
+                    else:
+                        desc = ""
                     if line.find("=") != -1:
                         # Plusarg with a value
+                        name=line[1:line.find('=')].strip()
+                        vtype=line[line.find('=')+1:].strip()
                     else:
                         # Just a plain plusarg
-                    plusarg = 
-                print("line=" + line)
+                        name=line[1:]
+                        vtype=None
+                        
+                    verbose_note("Plusargs: name=" + str(name) + " vtype=" + str(vtype) + " desc=" + str(desc))
+                    plusarg = PlusargInfo(name, desc, vtype)
+                    info.add_plusarg(plusarg)
         except Exception as e:
             error("Failed to load description from " + info.mkfile + "(" + str(e) + ")")
         

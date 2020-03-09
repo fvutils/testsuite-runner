@@ -10,7 +10,7 @@ class CmdRunner(object):
         """Returns the maximum number of commands to queue"""
         return 1
     
-    async def queue(self, id, cmd, env=None):
+    async def queue(self, id, cmd, env=None, cwd=None):
         raise NotImplementedError("" + str(type(self)) + "::queue not implemented")
     
     async def wait(self, timeout=-1):

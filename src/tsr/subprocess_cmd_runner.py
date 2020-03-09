@@ -6,6 +6,7 @@ Created on Mar 8, 2020
 from tsr.cmd_runner import CmdRunner
 import subprocess
 import asyncio
+from asyncio.tasks import FIRST_COMPLETED
 
 class SubprocessCmdRunner(CmdRunner):
     
@@ -20,10 +21,26 @@ class SubprocessCmdRunner(CmdRunner):
     
     async def queue(self, id, cmd, env=None, cwd=None):
         process = await asyncio.create_subprocess_exec(
-            cmd, env=env, cwd=cwd)
+            *cmd, env=env, cwd=cwd)
         self.proc_id_map[process] = id
         self.process_l.append(process)
         
     async def wait(self, timeout=-1):
-        await self.process_l
+        done, pending = await asyncio.wait(
+            map(lambda p:p.wait(), self.process_l), 
+            return_when=FIRST_COMPLETED)
+
+        ret = []
+        i = 0
+        while i < len(self.process_l):
+            p = self.process_l[i]
+            if p.returncode is not None:
+                id = self.proc_id_map[p]
+                self.proc_id_map.pop(p)
+                self.process_l.remove(p)
+                ret.append((id, p.returncode))
+            else:
+                i += 1
+                
+        return ret
         

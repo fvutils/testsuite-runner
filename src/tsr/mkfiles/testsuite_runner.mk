@@ -49,13 +49,13 @@ include $(COMMON_SIM_MK_DIR)/common_defs.mk
 # - Allow the test suite to provide its own
 # - Allow the environment to provide its own
 # - Finally, check if 'simscripts' provides an implementation
-ifneq (,$(TSR_ENGINE_MK))
-MK_INCLUDES += $(TSR_ENGINE_MK)
-endif
+#ifneq (,$(TSR_ENGINE_MK))
+#TSR_MK_INCLUDES += $(TSR_ENGINE_MK)
+#endif
 
-ifneq (,$(TSR_TOOL_MK))
-MK_INCLUDES += $(TSR_TOOL_MK)
-endif
+#ifneq (,$(TSR_TOOL_MK))
+#MK_INCLUDES += $(TSR_TOOL_MK)
+#endif
 
 # Filter out tool-control options like +tool.foo.setting_bar=XXX
 TSR_PLUSARGS_TOOLS := $(sort $(patsubst +tool.%,%,$(filter +tool.%,$(shell echo $(PLUSARGS) | sed -e 's/\+tool\.[a-zA-Z][a-zA-Z0-9_]*\.[a-zA-Z][a-zA-Z0-9_\.]*//g'))))
@@ -64,10 +64,10 @@ TSR_PLUSARGS_TOOLS := $(sort $(patsubst +tool.%,%,$(filter +tool.%,$(shell echo 
 TSR_TOOLS += $(TSR_PLUSARGS_TOOLS)
 
 # Include tool-specific makefiles
-MK_INCLUDES += $(foreach tool,$(TSR_TOOLS),$(TSR_DIR)/mkfiles/common_tool_$(tool).mk)
-MK_INCLUDES += $(TSR_DIR)/mkfiles/common_tool_gcc.mk
+#TSR_MK_INCLUDES += $(foreach tool,$(TSR_TOOLS),$(TSR_DIR)/mkfiles/common_tool_$(tool).mk)
+#TSR_MK_INCLUDES += $(TSR_DIR)/mkfiles/common_tool_gcc.mk
 
-include $(MK_INCLUDES)
+include $(TSR_MK_INCLUDES)
 
 DPIEXT=$(DLLEXT)
 
@@ -178,6 +178,6 @@ missing_sim_mk :
 	@echo "Error: Failed to find makefile for sim $(SIM) in \$$(TSR_DIR)/mkfiles/sim_mk and \$$(TSR_DIR)/../mkfiles"
 	@exit 1
 
-include $(MK_INCLUDES)
+include $(TSR_MK_INCLUDES)
 include $(COMMON_SIM_MK_DIR)/common_rules.mk
 

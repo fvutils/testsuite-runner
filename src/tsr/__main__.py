@@ -14,14 +14,16 @@ from tsr.registry import Registry
 from tsr.run_ctxt import RunCtxt
 from tsr.subprocess_cmd_runner import SubprocessCmdRunner
 import asyncio
+from tsr.tsr_env import TsrEnv
 
 
 _registry = None
 _cmd_runner = None
+_env = None
 
 def common_init(args):
     """Performs initialization used by all tasks"""
-    global _registry, _cmd_runner
+    global _registry, _cmd_runner, _env
     
     verbosity = 0 if args.v is None else args.v
     messaging.set_verbosity(verbosity)
@@ -30,8 +32,7 @@ def common_init(args):
     _registry.load()
     
     _cmd_runner = SubprocessCmdRunner()
-    
-    pass
+    _env = TsrEnv()
 
 def build_run_init(args, plusargs):
     """Performs common initialization needed for build and run actions"""
@@ -94,10 +95,40 @@ async def build(args, plusargs):
     global _cmd_runner
     ctxt = build_run_init(args, plusargs)
     
-    build_cmd = ["make", "-f", 
-        os.path.join(ctxt.launch_dir, "scripts", "Makefile")]
+    builddir = ctxt.get_builddir()
+
+    # TODO: suppot clean?
+        
+    if not os.path.isdir(builddir):
+        os.makedirs(builddir)
+        
+    build_env = _env.env.copy()
+        
+    # Create a makefile to include
+    with open(os.path.join(builddir, "tsr.mk"), "w") as f:
+        if ctxt.engine_info is not None:
+            f.write("include " + ctxt.engine_info.mkfile + "\n")
+            
+        for info in ctxt.tool_info:
+            f.write("include " + info.mkfile + "\n")
+            
+    build_env["TSR_MK_INCLUDES"] = os.path.join(builddir, "tsr.mk")
+            
+            
+        
     
-    await _cmd_runner.queue(0, build_cmd, cwd=ctxt.rundir)
+    build_cmd = ["make", "-f", 
+        os.path.join(ctxt.launch_dir, "scripts", "Makefile"),
+        "build"]
+    
+    await _cmd_runner.queue(
+        0, 
+        build_cmd, 
+        env = build_env,
+        cwd=ctxt.rundir)
+    
+    result = await _cmd_runner.wait()
+    print("result: " + str(result))
     
     pass
 

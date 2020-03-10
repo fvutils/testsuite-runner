@@ -34,7 +34,6 @@ export COMMON_SIM_MK_DIR
 DLLEXT=.so
 LIBPREF=lib
 
-RUN_ENV_VARS_V=$(foreach v,$(RUN_ENV_VARS),export $(v);)
 
 ifeq (,$(DEFAULT_SIM))
 SIM:=qs
@@ -147,25 +146,25 @@ build : build-post-link
 	@echo "build-post-link: $(BUILD_POSTLINK_TARGETS)"
 	@touch $@
 
-run-pre : $(RUN_PRE_TARGETS)
+run-pre : $(TSR_RUN_PRE_TARGETS)
 	$(Q)touch $@
 
-run-main : run-pre $(RUN_TARGETS)
+run-main : run-pre $(TSR_RUN_TARGETS)
 	$(Q)touch $@
 
-$(RUN_TARGETS) : run-pre
+$(TSR_RUN_TARGETS) : run-pre
 
-run-post : run-main $(RUN_POST_TARGETS)
+run-post : run-main $(TSR_RUN_POST_TARGETS)
 	$(Q)touch $@
 
-$(RUN_POST_TARGETS) : run-main
+$(TSR_RUN_POST_TARGETS) : run-main
 
 run : run-post
 	$(Q)touch $@
 
-pre-run: init-tools $(PRE_RUN_TARGETS)
+pre-run: init-tools $(TSR_PRE_RUN_TARGETS)
 
-post-run: $(POST_RUN_TARGETS)
+post-run: $(TSR_POST_RUN_TARGETS)
 
 init-tools:
 	@echo "== Simulator: $(SIM) == "

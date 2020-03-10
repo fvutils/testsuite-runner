@@ -10,7 +10,15 @@ include $(COMMON_DEFS_MK_DIR)/plusargs.mk
 uname_o=$(shell uname -o)
 ARCH=$(shell uname -m)
 
-PYTHON_BIN ?= python3
+TSR_PYTHONPATH += foo
+
+#********************************************************************
+#* Environment variables
+#********************************************************************
+TSR_RUN_ENV_VARS += PYTHONPATH=$(foreach p,$(TSR_PYTHONPATH),$(p):)
+TSR_RUN_ENV_VARS += LD_LIBRARY_PATH=$(foreach p,$(TSR_LIBPATH),$(p):)
+
+TSR_RUN_ENV_VARS_V=$(foreach v,$(TSR_RUN_ENV_VARS),export $(v);)
 
 ifeq (Cygwin,$(uname_o))
 OS:=Windows
@@ -76,18 +84,12 @@ endif
 LINK=$(CXX)
 DLLOUT=-shared
 
-# CXXFLAGS += -I$(SYSTEMC)/include
 ifneq (Windows,$(OS))
 CXXFLAGS += -fPIC
 CFLAGS += -fPIC
 else
 CXXFLAGS += -Wno-attributes
 endif
-
-CXXFLAGS += -g
-CXXFLAGS += -I$(VERILATOR_ROOT)/include
-CXXFLAGS += -I$(VERILATOR_ROOT)/include/vltstd
-CXXFLAGS += -std=c++0x
 
 # VERBOSE=true
 

@@ -13,22 +13,38 @@
 
 ifneq (1,$(RULES))
 
-ifeq (,$(TSR_VLOG_ARGS))
-ifeq (,$(wildcard $(SIM_DIR)/scripts/vlog_$(SIM).f))
-TSR_VLOG_ARGS += -f $(SIM_DIR_A)/scripts/vlog.f
+ifeq (,$(TSR_VLOG_ARGS_HDL))
+ifneq (,$(wildcard $(TSR_LAUNCH_DIR)/scripts/vlog_$(TSR_ENGINE)_hdl.f))
+TSR_VLOG_ARGS_HDL += -f $(TSR_LAUNCH_DIR)/scripts/vlog_$(TSR_ENGINE)_hdl.f
 else
-TSR_VLOG_ARGS += -f $(SIM_DIR_A)/scripts/vlog_$(SIM).f
+TSR_VLOG_ARGS_HDL += -f $(TSR_LAUNCH_DIR)/scripts/vlog_hdl.f
+endif
+endif
+
+ifeq (,$(TSR_VLOG_ARGS))
+ifneq (,$(wildcard $(TSR_LAUNCH_DIR)/scripts/vlog_$(TSR_ENGINE)_hdl.f))
+TSR_VLOG_ARGS += -f $(TSR_LAUNCH_DIR)/scripts/vlog_$(TSR_ENGINE)_hdl.f
+else
+TSR_VLOG_ARGS += -f $(TSR_LAUNCH_DIR)/scripts/vlog_$(SIM).f
 endif
 endif
 
 ifeq (,$(TSR_VCOM_ARGS))
-ifneq (,$(wildcard $(SIM_DIR)/scripts/vhdl_$(SIM).f))
-TSR_VCOM_ARGS += -f $(SIM_DIR_A)/scripts/vhdl_$(SIM).f
+ifneq (,$(wildcard $(TSR_LAUNCH_DIR)/scripts/vhdl_$(SIM).f))
+TSR_VCOM_ARGS += -f $(TSR_LAUNCH_DIR)/scripts/vhdl_$(SIM).f
 else
-ifneq (,$(wildcard $(SIM_DIR)/scripts/vhdl.f))
-TSR_VCOM_ARGS += -f $(SIM_DIR_A)/scripts/vhdl.f
+ifneq (,$(wildcard $(TSR_LAUNCH_DIR)/scripts/vhdl.f))
+TSR_VCOM_ARGS += -f $(TSR_LAUNCH_DIR)/scripts/vhdl.f
 endif
 endif
+endif
+
+TSR_RUN_ARGS += +TESTNAME=$(TESTNAME)
+
+ifeq (true,$(TSR_QUIET))
+REDIRECT:= >simx.log 2>&1
+else
+REDIRECT:=2>&1 | tee simx.log
 endif
 
 else # Rules

@@ -11,6 +11,9 @@ class TsrEnv(object):
     def __init__(self):
         self.env = os.environ.copy()
         self.env["TSR_PYTHON"] = sys.executable
-        self.env["VERBOSE"] = "true"
+        self.set_verbose(False)
+        
+    def set_verbose(self, v):
+        self.env["VERBOSE"] = "true" if v else "false"
         
     

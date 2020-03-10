@@ -15,6 +15,8 @@ from tsr.run_ctxt import RunCtxt
 from tsr.subprocess_cmd_runner import SubprocessCmdRunner
 import asyncio
 from tsr.tsr_env import TsrEnv
+from test.support.testresult import get_test_runner
+import shutil
 
 
 _registry = None
@@ -33,6 +35,10 @@ def common_init(args):
     
     _cmd_runner = SubprocessCmdRunner()
     _env = TsrEnv()
+    _env.set_verbose(verbosity > 0)
+    
+    _env.env["TSR_LAUNCH_DIR"] = os.getcwd()
+    
 
 def build_run_init(args, plusargs):
     """Performs common initialization needed for build and run actions"""
@@ -68,6 +74,7 @@ def build_run_init(args, plusargs):
 
     if ctxt.engine is not None:
         note("Running with engine " + ctxt.engine)
+        _env.env["TSR_ENGINE"] = ctxt.engine
         engine_info = _registry.get_engine(ctxt.engine)
         
         if engine_info is None:
@@ -81,41 +88,41 @@ def build_run_init(args, plusargs):
         ctxt.engine_info = engine_info
     else:
         note("No engine specified")
+        _env.env["TSR_ENGINE"] = "none"
         
     for tool in ctxt.tools:
         tool_info = _registry.get_tool(tool)
         
         if tool_info is None:
             raise Exception("No tool named \"" + tool + "\"")
-    
-    
-    return ctxt
 
-async def build(args, plusargs):
-    global _cmd_runner
-    ctxt = build_run_init(args, plusargs)
-    
     builddir = ctxt.get_builddir()
+    
+    _env.env["TSR_BUILD_DIR"] = builddir
 
-    # TODO: suppot clean?
+    # TODO: support clean?
         
     if not os.path.isdir(builddir):
         os.makedirs(builddir)
         
-    build_env = _env.env.copy()
-        
-    # Create a makefile to include
+    # Create a makefile to include that includes all
+    # engine and tool mkfiles
     with open(os.path.join(builddir, "tsr.mk"), "w") as f:
         if ctxt.engine_info is not None:
             f.write("include " + ctxt.engine_info.mkfile + "\n")
             
         for info in ctxt.tool_info:
-            f.write("include " + info.mkfile + "\n")
+            f.write("include " + info.mkfile + "\n")    
+    
+    return ctxt
+
+async def do_build(ctxt):
+    build_env = _env.env.copy()
+    
+    builddir = ctxt.get_builddir()
             
     build_env["TSR_MK_INCLUDES"] = os.path.join(builddir, "tsr.mk")
             
-            
-        
     
     build_cmd = ["make", "-f", 
         os.path.join(ctxt.launch_dir, "scripts", "Makefile"),
@@ -124,16 +131,57 @@ async def build(args, plusargs):
     await _cmd_runner.queue(
         0, 
         build_cmd, 
-        env = build_env,
-        cwd=ctxt.rundir)
+        env=build_env,
+        cwd=builddir)
     
     result = await _cmd_runner.wait()
-    print("result: " + str(result))
     
-    pass
+    if result[0][1] != 0:
+        raise Exception("Build Failed")
+
+async def build(args, plusargs):
+    global _cmd_runner
+    ctxt = build_run_init(args, plusargs)
+    
+    await do_build(ctxt)
 
 async def runtest(args, plusargs):
     ctxt = build_run_init(args, plusargs)
+
+    # TODO: should allow skipping this    
+    await do_build(ctxt)
+    
+    run_env = _env.env.copy()
+
+    # TODO: need name of test
+    testname = "test"
+    test_rundir = os.path.join(ctxt.rundir, testname)
+    
+    if os.path.isdir(test_rundir):
+        shutil.rmtree(test_rundir)
+        
+    os.makedirs(test_rundir)
+        
+    # Must pass tool list to run makefiles as well
+    run_env["TSR_MK_INCLUDES"] = os.path.join(
+        ctxt.get_builddir(), "tsr.mk")
+            
+    
+    build_cmd = ["make", "-f", 
+        os.path.join(ctxt.launch_dir, "scripts", "Makefile"),
+        "run"]
+    
+    await _cmd_runner.queue(
+        0, 
+        build_cmd, 
+        env=run_env,
+        cwd=test_rundir)
+    
+    result = await _cmd_runner.wait()
+    
+    if result[0][1] != 0:
+        raise Exception("Run Failed")
+    
     pass
 
 async def regress(args, plusargs):

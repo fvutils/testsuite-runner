@@ -6,6 +6,7 @@ Created on Mar 7, 2020
 
 import os
 import sys
+import importlib
 
 from tsr.engine_info import EngineInfo
 from tsr.messaging import verbose_note, error
@@ -14,9 +15,12 @@ import subprocess
 from _io import StringIO
 import cmd
 from tsr.plusarg_info import PlusargInfo
+from json import tool
 
 
 class Registry(object):
+    
+    _inst = None
     
     def __init__(self):
         self.engines = []
@@ -34,9 +38,13 @@ class Registry(object):
         # Load up the entries in the system path
         self.pythonpath.extend(sys.path)
         
-        
-        
         pass
+
+    @staticmethod    
+    def inst():
+        if Registry._inst is None:
+            Registry._inst = Registry()
+        return Registry._inst
     
     def get_engine(self, name):
         for e in self.engines:
@@ -51,11 +59,44 @@ class Registry(object):
                 return e 
             
         return None
+
+    def register_engine(self, engine_info):
+        self.engines.append(engine_info)    
+
+    def register_tool(self, tool_info):
+        self.tools.append(tool_info)
+    
+    def _process_pythonpath_dir(self, pp_dir):
+        for f in os.listdir(pp_dir):
+            if f == ".tsr" and os.path.isfile(os.path.join(pp_dir, "__init__.py")):
+                # TODO: this is a TSR extension directory
+                print("TSR plugin (" + os.path.join(pp_dir, f) + ")")
+                import importlib.util
+                print("--> load " + pp_dir)
+                spec = importlib.util.spec_from_file_location(
+                    "vlsim.tsr", 
+                    os.path.join(pp_dir, "__init__.py"),
+                    submodule_search_locations=None)
+                print("<-- load " + pp_dir + " " + str(spec))
+                foo = importlib.util.module_from_spec(spec)
+                spec.loader.exec_module(foo)
+
+            elif os.path.splitext(f)[1] == ".egg-link":
+                line = None
+                with open(os.path.join(pp_dir, f), "r") as f:
+                    line = f.readline().strip()
+
+                if line is not None and line != "":
+                    print("Process editable package: " + line)
+                    self._process_pythonpath_dir(line)                    
+            elif not f.startswith("__") and os.path.isdir(os.path.join(pp_dir, f)):
+                self._process_pythonpath_dir(os.path.join(pp_dir, f))
+        
     
     def load(self, load_info=False):
         for pp in self.pythonpath:
-            print("pp=" + pp)
-            
+            if os.path.isdir(pp):
+                self._process_pythonpath_dir(pp)
         
         for mkfile_dir in self.mkfile_dirs:
             self._load_mkfiles_dir(mkfile_dir)

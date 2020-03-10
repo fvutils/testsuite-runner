@@ -16,6 +16,9 @@ class RunCtxt(object):
         self.engine_info = None
         self.tools = []
         self.tool_info = []
+        self.test_info = []
+        self.regress_mode = False
+        self.regress_id = "regression_id"
         
     def add_tool(self, tool):
         if tool not in self.tools:
@@ -26,4 +29,20 @@ class RunCtxt(object):
             self.rundir, 
             self.project, 
             self.engine)
+        
+    def get_testdir(self, testname, id):
+        if self.regress_mode:
+            return os.path.join(
+                self.rundir, 
+                self.project,
+                "regress",
+                self.regress_id,
+                ("%s_%04d" % (testname,id)))
+        else:
+            return os.path.join(
+                self.rundir, 
+                self.project,
+                "tests",
+                testname
+                )
             

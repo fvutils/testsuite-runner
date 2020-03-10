@@ -1,2 +1,4 @@
 
+-e git+https://github.com/mballance/vlsim.git#egg=vlsim
+
 

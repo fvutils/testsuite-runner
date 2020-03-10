@@ -155,7 +155,7 @@ async def runtest(args, plusargs):
 
     # TODO: need name of test
     testname = "test"
-    test_rundir = os.path.join(ctxt.rundir, testname)
+    test_rundir = ctxt.get_testdir(testname, 0)
     
     if os.path.isdir(test_rundir):
         shutil.rmtree(test_rundir)

@@ -17,6 +17,9 @@ import asyncio
 from tsr.tsr_env import TsrEnv
 from test.support.testresult import get_test_runner
 import shutil
+from tsr.job import Job
+from tsr.job_runner import JobRunner
+from tsr.filelist_parser import FilelistParser
 
 
 _registry = None
@@ -108,6 +111,10 @@ def build_run_init(args, plusargs):
     # Create a makefile to include that includes all
     # engine and tool mkfiles
     with open(os.path.join(builddir, "tsr.mk"), "w") as f:
+        f.write("#********************************************************************\n")
+        f.write("#* tsr.mk\n")
+        f.write("#********************************************************************\n")
+        
         if ctxt.engine_info is not None:
             f.write("include " + ctxt.engine_info.mkfile + "\n")
             
@@ -116,13 +123,51 @@ def build_run_init(args, plusargs):
     
     return ctxt
 
+def find_test(spec):
+    search_path = [
+        os.path.join(os.getcwd(), "tests")
+        ]
+
+    testfile = None
+        
+    if os.path.isfile(spec):
+        testfile = os.path.abspath(spec)
+    else:
+        for p in search_path:
+            if os.path.isfile(os.path.join(p, spec)):
+                testfile = os.path.join(p, spec)
+            elif os.path.isfile(os.path.join(p, spec + ".f")):
+                testfile = os.path.join(p, spec + ".f")
+                
+    if testfile is None:
+        raise Exception("Failed to find test \"" + spec + "\"")
+    
+    return testfile
+
+def process_testfile(testfile) -> Job:
+    job = Job(testfile)
+    p = FilelistParser()
+    
+    p.parse(testfile, os.getcwd())
+    
+    for t in p.token_l:
+        if t.img[0] == "+":
+            job.plusargs.append(t.img)
+        else:
+            print("Warning: unknown token " + t.img)
+    
+    return job
+
 async def do_build(ctxt):
     build_env = _env.env.copy()
     
     builddir = ctxt.get_builddir()
             
     build_env["TSR_MK_INCLUDES"] = os.path.join(builddir, "tsr.mk")
-            
+    
+    # Create a plusargs.mk file for build
+    with open(os.path.join(builddir, "variables.mk"), "w") as f:
+        f.write("TSR_PLUSARGS += +foo=bar\n")
     
     build_cmd = ["make", "-f", 
         os.path.join(ctxt.launch_dir, "scripts", "Makefile"),
@@ -145,45 +190,48 @@ async def build(args, plusargs):
     
     await do_build(ctxt)
 
+#********************************************************************
+#* runtest
+#********************************************************************
 async def runtest(args, plusargs):
+    global _cmd_runner
+    
     ctxt = build_run_init(args, plusargs)
 
     # TODO: should allow skipping this    
     await do_build(ctxt)
     
-    run_env = _env.env.copy()
 
     # TODO: need name of test
     testname = "test"
-    test_rundir = ctxt.get_testdir(testname, 0)
-    
-    if os.path.isdir(test_rundir):
-        shutil.rmtree(test_rundir)
-        
-    os.makedirs(test_rundir)
-        
-    # Must pass tool list to run makefiles as well
-    run_env["TSR_MK_INCLUDES"] = os.path.join(
-        ctxt.get_builddir(), "tsr.mk")
-            
-    
-    build_cmd = ["make", "-f", 
-        os.path.join(ctxt.launch_dir, "scripts", "Makefile"),
-        "run"]
-    
-    await _cmd_runner.queue(
-        0, 
-        build_cmd, 
-        env=run_env,
-        cwd=test_rundir)
-    
-    result = await _cmd_runner.wait()
-    
-    if result[0][1] != 0:
-        raise Exception("Run Failed")
-    
-    pass
 
+    testfile = find_test(args.test)    
+    job = process_testfile(testfile)
+    
+    job.job_rundir = ctxt.get_testdir(testname, 0)
+    
+    job.env = _env.env.copy()
+
+    # Must pass tool list to run makefiles as well
+    job.mk_includes.append(os.path.join(
+        ctxt.get_builddir(), "tsr.mk"))
+    
+    # TODO: process global and test-specific plusargs to identify
+    # more makefiles to include
+            
+    job.cmd.extend(["make", "-f", 
+        os.path.join(ctxt.launch_dir, "scripts", "Makefile"),
+        "run"])
+    
+    # TODO: gather global plusargs
+    runner = JobRunner(_cmd_runner, [job], plusargs)
+    
+    await runner.run()
+
+    print("--> wait_job")    
+    await _cmd_runner.wait()
+    print("<-- wait_job")    
+    
 async def regress(args, plusargs):
     ctxt = build_run_init(args, plusargs)
     

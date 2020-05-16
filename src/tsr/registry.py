@@ -16,6 +16,7 @@ from _io import StringIO
 import cmd
 from tsr.plusarg_info import PlusargInfo
 from json import tool
+import json
 
 
 class Registry(object):
@@ -135,8 +136,21 @@ class Registry(object):
                         verbose_note("ignore makefile " + f, 2)
 
     def _load_info(self, info):
+        json_file = os.path.join(
+            os.path.dirname(info.mkfile),
+            os.path.splitext(os.path.basename(info.mkfile))[0] + ".json")
+        
+        if os.path.isfile(json_file):
+            self._load_info_json(info, json_file)
+        
         self._load_mkfile_description(info)
         self._load_mkfile_plusargs(info)
+        
+    def _load_info_json(self, info, json_file):
+        with open(json_file, "r") as fp:
+            info = json.load(fp)
+            
+        pass
                     
     def _run_make(self, args):
         cmd = ["make", "TSR_PYTHON=" + sys.executable]

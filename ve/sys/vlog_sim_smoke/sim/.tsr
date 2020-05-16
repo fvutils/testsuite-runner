@@ -1,0 +1,5 @@
+
+[tsr]
+engine = ivl
+tools = cocotb 
+

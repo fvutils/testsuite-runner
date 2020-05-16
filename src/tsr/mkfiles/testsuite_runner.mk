@@ -4,6 +4,7 @@ TSR_DIR := $(abspath $(TSR_MKFILES_DIR)/..)
 
 include $(TSR_DIR)/mkfiles/plusargs.mk
 
+
 TOP_MODULE ?= $(TB)
 DEBUG ?= false
 
@@ -30,6 +31,8 @@ COMMON_SIM_MK := $(lastword $(MAKEFILE_LIST))
 COMMON_SIM_MK_DIR := $(dir $(COMMON_SIM_MK))
 export COMMON_SIM_MK_DIR
 
+# Include the build or run plusargs.mk file
+include variables.mk
 
 DLLEXT=.so
 LIBPREF=lib

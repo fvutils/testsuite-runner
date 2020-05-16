@@ -13,8 +13,9 @@ Common
 - TSR_PYTHONPATH  -- Space-delimited list of python path elements
 - TSR_LIBPATH     -- Space-delimited list of LD_LIBRARY_PATH elements
 - TSR_PLUSARGS    -- Active plusargs
-- TSR_ENGINE    -- Name of the engine being run
-- TSR_TOOLS     -- List of currently-enabled tools
+- TSR_ENGINE      -- Name of the engine being run
+- TSR_TOOLS       -- List of currently-enabled tools
+- TSR_TESTNAME    -- Name of the running test
 
 - TSR_VERBOSE   -- Display extra information, such as build commands
 - TSR_QUIET     -- Suppress all output

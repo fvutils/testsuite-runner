@@ -1,0 +1,19 @@
+TSR_TOOLS: 
+TSR_PLUSARGS_TOOLS: 
+PLUSARGS: 
+INFACT_IMPORT_TARGETS: 
+build-pre-compile: 
+build-compile: ivl_compile
+build-post-compile: 
+build-pre-link: 
+build-link:  
+build-post-link: 
+pp=
+pp=/project/fun/testsuite-runner/testsuite-runner/src
+pp=/usr/lib64/python36.zip
+pp=/usr/lib64/python3.6
+pp=/usr/lib64/python3.6/lib-dynload
+pp=/project/fun/testsuite-runner/testsuite-runner/packages/python/lib64/python3.6/site-packages
+pp=/project/fun/testsuite-runner/testsuite-runner/packages/python/lib/python3.6/site-packages
+Note: Running with engine ivl
+result: [(0, 0)]

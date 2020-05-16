@@ -1,0 +1,28 @@
+#! /project/tools/icarus/inst/bin/vvp
+:ivl_version "11.0 (devel)" "(s20150603-767-g9f71242)";
+:ivl_delay_selection "TYPICAL";
+:vpi_time_precision + 0;
+:vpi_module "/project/tools/icarus/inst/lib/ivl/system.vpi";
+:vpi_module "/project/tools/icarus/inst/lib/ivl/vhdl_sys.vpi";
+:vpi_module "/project/tools/icarus/inst/lib/ivl/vhdl_textio.vpi";
+:vpi_module "/project/tools/icarus/inst/lib/ivl/v2005_math.vpi";
+:vpi_module "/project/tools/icarus/inst/lib/ivl/va_math.vpi";
+:vpi_module "/project/tools/icarus/inst/lib/ivl/v2009.vpi";
+S_0x25afc80 .scope package, "$unit" "$unit" 2 1;
+ .timescale 0 0;
+S_0x25afe10 .scope module, "vlog_sim_smoke_tb" "vlog_sim_smoke_tb" 3 10;
+ .timescale 0 0;
+    .port_info 0 /INPUT 1 "clk";
+o0x7fca7dff8018 .functor BUFZ 1, C4<z>; HiZ drive
+v0x25affa0_0 .net "clk", 0 0, o0x7fca7dff8018;  0 drivers
+    .scope S_0x25afe10;
+T_0 ;
+    %vpi_call/w 3 13 "$display", "Hello World" {0 0 0};
+    %end;
+    .thread T_0;
+# The file index is used to find the file name in the following table.
+:file_names 4;
+    "N/A";
+    "<interactive>";
+    "-";
+    "/project/fun/testsuite-runner/testsuite-runner/ve/sys/vlog_sim_smoke/sim/../tb/vlog_sim_smoke_tb.sv";

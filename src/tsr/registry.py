@@ -42,7 +42,7 @@ class Registry(object):
         pass
 
     @staticmethod    
-    def inst():
+    def inst() -> 'Registry':
         if Registry._inst is None:
             Registry._inst = Registry()
         return Registry._inst
@@ -61,11 +61,14 @@ class Registry(object):
             
         return None
 
-    def register_engine(self, engine_info):
-        self.engines.append(engine_info)    
+    def register_engine(self, engine_info : EngineInfo):
+        self.engines.append(engine_info)
+        engine_info.rgy = self
+        print("RegisterEngine: " + str(self.engines))
 
     def register_tool(self, tool_info):
         self.tools.append(tool_info)
+        tool_info.rgy = self
     
     def _process_pythonpath_dir(self, pp_dir):
         for f in os.listdir(pp_dir):

@@ -23,6 +23,7 @@ Common
 - TSR_BUILD_DIR -- Engine-specific directory where build is performed
 
 - TSR_MK_INCLUDES
+- TSR_MKFILES_DIR               - Points to 
 
 - TSR_BUILD_PRE_TARGETS
 - TSR_BUILD_PRECOMPILE_TARGETS

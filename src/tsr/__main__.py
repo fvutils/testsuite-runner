@@ -20,6 +20,7 @@ import shutil
 from tsr.job import Job
 from tsr.job_runner import JobRunner
 from tsr.filelist_parser import FilelistParser
+from tsr.project_config import ProjectConfig
 
 
 _registry = None
@@ -33,7 +34,7 @@ def common_init(args):
     verbosity = 0 if args.v is None else args.v
     messaging.set_verbosity(verbosity)
     
-    _registry = Registry()
+    _registry = Registry.inst()
     _registry.load()
     
     _cmd_runner = SubprocessCmdRunner()
@@ -68,10 +69,14 @@ def build_run_init(args, plusargs):
     # Get a default for the project name
     ctxt.project = os.path.basename(os.path.dirname(cwd))
     
-    if os.path.join(cwd, ".tsr"):
+    if os.path.join(cwd, "tsr-config.json"):
         verbose_note("Reading project-specific configuration")
-        CfgReader.read_cfg(os.path.join(cwd, ".tsr"), ctxt)
-        
+        ctxt.project_cfg = ProjectConfig.read(os.path.join(cwd, "tsr-config.json"))
+    else:
+        raise Exception("No project configuration (tsr-config.json) file present")
+    
+    ctxt.engine = ctxt.project_cfg.default_engine
+
     if args.engine is not None:
         ctxt.engine = args.engine
 
@@ -92,12 +97,25 @@ def build_run_init(args, plusargs):
     else:
         note("No engine specified")
         _env.env["TSR_ENGINE"] = "none"
+  
+    ctxt.tools = ctxt.tools.union(ctxt.project_cfg.tools)
+    
+    # Gather any additional tools from the command-line
+    for p in plusargs:
+        print("plusarg: " + p)
+        if p.startswith("+tool.") and p.find('.', len("+tool.")) == -1:
+            tool = p[len("+tool."):]
+            print("TOOL: " + tool)
+            ctxt.tools.add(tool)
         
     for tool in ctxt.tools:
+        verbose_note("Enabling tool \"" + tool + "\"", 1)
         tool_info = _registry.get_tool(tool)
         
         if tool_info is None:
             raise Exception("No tool named \"" + tool + "\"")
+        tool_info.load_info()
+        ctxt.tool_info.append(tool_info)
 
     builddir = ctxt.get_builddir()
     

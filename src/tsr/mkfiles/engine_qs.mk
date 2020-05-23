@@ -24,8 +24,12 @@ include $(TSR_MKFILES_DIR)/hdlsim_common.mk
 
 # Take QUESTA_HOME if set. Otherwise, probe from where executables are located
 ifeq (,$(QUESTA_HOME))
-QUESTA_HOME := $(dir $(shell which vsim))
-QUESTA_HOME := $(shell dirname $(QUESTA_HOME))
+QUESTA_HOME := $(dir $(shell which vsim 2>/dev/null))
+ifneq (,$(QUESTA_HOME)
+	QUESTA_HOME := $(shell dirname $(QUESTA_HOME))
+else
+	QUESTA_HOME := QUESTA_NOT_FOUND
+endif
 endif
 # $(call have_plusarg,tool.visualizer,$(PLUSARGS))
 HAVE_VISUALIZER=true

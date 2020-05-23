@@ -1,4 +1,5 @@
 
+TSR_MK := scripts/Makefile
 TSR_MKFILES_DIR := $(dir $(lastword $(MAKEFILE_LIST)))
 TSR_DIR := $(abspath $(TSR_MKFILES_DIR)/..)
 
@@ -107,36 +108,22 @@ all :
 # - Link
 # - Post-Link
 
-build-pre-compile : $(BUILD_PRECOMPILE_TARGETS)
-	@touch $@
+build-pre-compile : $(TSR_BUILD_PRECOMPILE_TARGETS)
 
-build-compile : build-pre-compile $(BUILD_COMPILE_TARGETS)
-	@touch $@
+build-compile : build-pre-compile $(TSR_BUILD_COMPILE_TARGETS)
 	
-$(BUILD_COMPILE_TARGETS) : build-pre-compile
-
-build-post-compile : build-compile $(BUILD_POSTCOMPILE_TARGETS)
-	@touch $@
+build-post-compile : $(TSR_BUILD_POSTCOMPILE_TARGETS)
 	
-$(BUILD_POSTCOMPILE_TARGETS) : build-compile
-
-build-pre-link : build-post-compile $(BUILD_PRELINK_TARGETS)
-	@touch $@
+build-pre-link : $(TSR_BUILD_PRELINK_TARGETS)
 	
-$(BUILD_PRELINK_TARGETS) : build-post-compile
-
-build-link : build-pre-link $(BUILD_LINK_TARGETS)
-	@touch $@
+build-link : $(TSR_BUILD_LINK_TARGETS)
 	
-$(BUILD_LINK_TARGETS) : build-pre-link
-
-build-post-link : build-link $(BUILD_POSTLINK_TARGETS)
-	@touch $@
+build-post-link : $(TSR_BUILD_POSTLINK_TARGETS)
 	
 $(BUILD_POSTLINK_TARGETS) : build-link
 	
 # build : $(BUILD_TARGETS)
-build : build-post-link
+build : 
 	@echo "TSR_TOOLS: $(TSR_TOOLS)"
 	@echo "TSR_PLUSARGS_TOOLS: $(TSR_PLUSARGS_TOOLS)"
 	@echo "PLUSARGS: $(sort $(PLUSARGS))"
@@ -147,6 +134,12 @@ build : build-post-link
 	@echo "build-pre-link: $(BUILD_PRELINK_TARGETS)"
 	@echo "build-link: $(BUILD_LINK_TARGETS)"
 	@echo "build-post-link: $(BUILD_POSTLINK_TARGETS)"
+	$(Q)$(MAKE) -f $(TSR_MK) build-pre-compile
+	$(Q)$(MAKE) -f $(TSR_MK) build-compile
+	$(Q)$(MAKE) -f $(TSR_MK) build-post-compile
+	$(Q)$(MAKE) -f $(TSR_MK) build-pre-link
+	$(Q)$(MAKE) -f $(TSR_MK) build-link
+	$(Q)$(MAKE) -f $(TSR_MK) build-post-link
 	@touch $@
 
 run-pre : $(TSR_RUN_PRE_TARGETS)

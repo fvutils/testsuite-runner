@@ -4,7 +4,7 @@ from setuptools import setup
 
 setup(
   name = "testsuite-runner",
-  packages=['testsuite-runner'],
+  packages=['tsr'],
   package_dir = {'' : 'src'},
   author = "Matthew Ballance",
   author_email = "matt.ballance@gmail.com",
@@ -14,7 +14,7 @@ setup(
   url = "https://github.com/fvutils/testsuite-runner",
   entry_points={
     'console_scripts': [
-      'tsr = testsuite-runner.__main__:main'
+      'tsr = tsr.__main__:main'
     ]
   },
   setup_requires=[

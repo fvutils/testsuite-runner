@@ -38,7 +38,7 @@ else
 #********************************************************************
 ifneq (,$(PYBFMS_LANGUAGE))
 gen-pybfms :
-	$(Q)$(TSR_PYTHON) -m pybfms generate -l $(PYBFMS_LANGUAGE) \
+	$(Q)$(TSR_RUN_ENV_VARS_V)$(TSR_PYTHON) -m pybfms generate -l $(PYBFMS_LANGUAGE) \
 		$(foreach m,$(PYBFMS_BFM_MODULES),-m $(m))
 else
 gen-pybfms :

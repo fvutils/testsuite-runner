@@ -21,6 +21,9 @@ from tsr.job import Job
 from tsr.job_runner import JobRunner
 from tsr.filelist_parser import FilelistParser
 from tsr.project_config import ProjectConfig
+from tsr.testspec_registry import TestspecRegistry
+from typing import List
+from tsr.test_info import TestInfo
 
 
 _registry = None
@@ -42,7 +45,12 @@ def common_init(args):
     _env.set_verbose(verbosity > 0)
     
     _env.env["TSR_LAUNCH_DIR"] = os.getcwd()
+
+def expand_var(val, env, project_env):
+    ret = val
     
+    return ret
+        
 
 def build_run_init(args, plusargs):
     """Performs common initialization needed for build and run actions"""
@@ -53,10 +61,11 @@ def build_run_init(args, plusargs):
     cwd = os.getcwd()
     ctxt.launch_dir = cwd
     
+    
     if "TSR_RUNDIR" in os.environ.keys():
         ctxt.rundir = os.environ["TSR_RUNDIR"]
         
-    if args.rundir is not None:
+    if hasattr(args, "rundir") and args.rundir is not None:
         ctxt.rundir = args.rundir
         
     if ctxt.rundir is None:
@@ -75,9 +84,19 @@ def build_run_init(args, plusargs):
     else:
         raise Exception("No project configuration (tsr-config.json) file present")
     
+    project_env = ctxt.project_cfg.getEnv(_env.env)
+    print("Project Env")
+    for k in project_env.keys():
+        print("Var " + k + "=" + project_env[k])
+        val = project_env[k]
+        if val.find("$") != -1:
+            # Expand variable
+            val = expand_var(val, _env.env, project_env)
+        _env.env[k] = val
+    
     ctxt.engine = ctxt.project_cfg.default_engine
 
-    if args.engine is not None:
+    if hasattr(args, "engine") and args.engine is not None:
         ctxt.engine = args.engine
 
     if ctxt.engine is not None:
@@ -118,8 +137,12 @@ def build_run_init(args, plusargs):
         ctxt.tool_info.append(tool_info)
 
     builddir = ctxt.get_builddir()
-    
+
+    # Core environment variables    
     _env.env["TSR_BUILD_DIR"] = builddir
+    _env.env["TSR_MK_INCLUDES"] = os.path.join(builddir, "tsr.mk")
+    _env.env["TSR_ROOT_MKFILE"] = os.path.join(
+        ctxt.launch_dir, "scripts", "Makefile")
 
     # TODO: support clean?
         
@@ -141,7 +164,7 @@ def build_run_init(args, plusargs):
     
     return ctxt
 
-def find_test(spec):
+def find_tests(spec)->List[TestInfo]:
     search_path = [
         os.path.join(os.getcwd(), "tests")
         ]
@@ -181,7 +204,6 @@ async def do_build(ctxt):
     
     builddir = ctxt.get_builddir()
             
-    build_env["TSR_MK_INCLUDES"] = os.path.join(builddir, "tsr.mk")
     
     # Create a plusargs.mk file for build
     with open(os.path.join(builddir, "variables.mk"), "w") as f:
@@ -215,22 +237,30 @@ async def runtest(args, plusargs):
     global _cmd_runner
     
     ctxt = build_run_init(args, plusargs)
-
+    
     # TODO: should allow skipping this    
     await do_build(ctxt)
     
+    # Load test specs from specified test directories
+    # In the case of unit tests, loading the registry
+    # may depend on the build step
+    test_rgy = TestspecRegistry.load(ctxt.project_cfg.test_paths)
 
     # TODO: need name of test
     testname = "test"
 
-    testfile = find_test(args.test)    
-    job = process_testfile(testfile)
+    tests = test_rgy.getTests(args.test)
+    if len(tests) > 1:
+        raise Exception("runtest command can only run a single test")
     
-    job.job_rundir = ctxt.get_testdir(testname, 0)
     
+    job = Job(tests[0].fullname)
+    job.job_rundir = ctxt.get_testdir(tests[0].fullname, 0)
+    
+    test_vars = tests[0].getVariables()
     job.env = _env.env.copy()
 
-    # Must pass tool list to run makefiles as well
+    # TODO: Must pass tool list to run makefiles as well
     job.mk_includes.append(os.path.join(
         ctxt.get_builddir(), "tsr.mk"))
     
@@ -255,6 +285,28 @@ async def regress(args, plusargs):
     
     pass
 
+def _dump_tests(ind, group):
+    if group.name is not None:
+        print(ind + group.name)
+
+    for t in group.tests:
+        print(ind + "  " + t.name)
+        
+    for g in group.testgroups:
+        _dump_tests(ind + "    ", g)
+        
+
+async def list_tests(args, plusargs):
+    ctxt = build_run_init(args, plusargs)
+    
+    # Load test specs from specified test directories
+    # In the case of unit tests, loading the registry
+    # may depend on the build step
+    test_rgy = TestspecRegistry.load(ctxt.project_cfg.test_paths)
+    _dump_tests("", test_rgy)
+    
+    
+
 async def config_mkfiles(args, plusargs):
     pkg_dir = os.path.dirname(os.path.abspath(__file__))
     
@@ -275,6 +327,12 @@ def get_parser():
         help="Specifies the engine to target")
     build_cmd.add_argument("--rundir", "-r",
         help="Specifies the run directory")
+    
+    list_cmd = subparser.add_parser("list",
+            help="Lists available tests")
+    list_cmd.set_defaults(func=list_tests)
+    list_cmd.add_argument("-v", action="count",
+        help="Enables verbose output")
     
     runtest_cmd = subparser.add_parser("runtest",
         help="Runs a single test")

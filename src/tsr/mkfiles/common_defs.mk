@@ -15,7 +15,8 @@ TSR_PYTHONPATH += foo
 #********************************************************************
 #* Environment variables
 #********************************************************************
-TSR_RUN_ENV_VARS += PYTHONPATH=$(foreach p,$(TSR_PYTHONPATH),$(p):)
+space := $(subst ,, )
+TSR_RUN_ENV_VARS += PYTHONPATH=$(subst $(space),:,$(TSR_PYTHONPATH))
 TSR_RUN_ENV_VARS += LD_LIBRARY_PATH=$(foreach p,$(TSR_LIBPATH),$(p):)
 
 TSR_RUN_ENV_VARS_V=$(foreach v,$(TSR_RUN_ENV_VARS),export $(v);)

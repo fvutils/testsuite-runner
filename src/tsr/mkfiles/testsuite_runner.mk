@@ -134,13 +134,15 @@ build :
 	@echo "build-pre-link: $(BUILD_PRELINK_TARGETS)"
 	@echo "build-link: $(BUILD_LINK_TARGETS)"
 	@echo "build-post-link: $(BUILD_POSTLINK_TARGETS)"
-	$(Q)$(MAKE) -f $(TSR_MK) build-pre-compile
-	$(Q)$(MAKE) -f $(TSR_MK) build-compile
-	$(Q)$(MAKE) -f $(TSR_MK) build-post-compile
-	$(Q)$(MAKE) -f $(TSR_MK) build-pre-link
-	$(Q)$(MAKE) -f $(TSR_MK) build-link
-	$(Q)$(MAKE) -f $(TSR_MK) build-post-link
-	@touch $@
+	$(Q)if test "x$(TSR_BUILD_PRECOMPILE_TARGETS)" != "x"; then \
+	    $(MAKE) -f $(TSR_ROOT_MKFILE) build-pre-compile; fi
+	$(Q)if test "x$(TSR_BUILD_COMPILE_TARGETS)" != "x"; then \
+	    $(MAKE) -f $(TSR_ROOT_MKFILE) build-compile; fi
+	$(Q)if test "x$(TSR_BUILD_POSTCOMPILE_TARGETS)" != "x"; then \
+	    $(MAKE) -f $(TSR_ROOT_MKFILE) build-post-compile; fi 
+	$(Q)$(MAKE) -f $(TSR_ROOT_MKFILE) build-pre-link
+	$(Q)$(MAKE) -f $(TSR_ROOT_MKFILE) build-link
+	$(Q)$(MAKE) -f $(TSR_ROOT_MKFILE) build-post-link
 
 run-pre : $(TSR_RUN_PRE_TARGETS)
 	$(Q)touch $@

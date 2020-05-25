@@ -9,6 +9,8 @@ Common
 
 - Q               -- Prefix variable used to suppress output (eg $(Q)cmd)
 
+- TSR_LAUNCH_DIR  -- Directory from which TSR is launched
+
 - TSR_PYTHON      -- Path to the Python interpreter used by TSR
 - TSR_PYTHONPATH  -- Space-delimited list of python path elements
 - TSR_LIBPATH     -- Space-delimited list of LD_LIBRARY_PATH elements

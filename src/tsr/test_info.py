@@ -1,5 +1,8 @@
 from typing import Dict, List
 
+from tsr.job import Job
+
+
 class TestInfo(object):
     
     def __init__(self, name):
@@ -8,6 +11,14 @@ class TestInfo(object):
         self.description = ""
         self.append_vars : Dict[str, List[str]] = {}
         self.set_vars : Dict[str, str] = []
+        
+    @property
+    def fullname(self):
+        pass
+        
+    def getVariables(self)->Dict[str,str]:
+        """Returns the variables to be set for this test"""
+        pass
         
     def collectVariables(self)->Dict[str, str]:
         # Variables that we need to ignore higher up 

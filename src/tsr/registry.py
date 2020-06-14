@@ -17,6 +17,7 @@ import cmd
 from tsr.plusarg_info import PlusargInfo
 from json import tool
 import json
+from tsr import messaging
 
 
 class Registry(object):
@@ -64,7 +65,6 @@ class Registry(object):
     def register_engine(self, engine_info : EngineInfo):
         self.engines.append(engine_info)
         engine_info.rgy = self
-        print("RegisterEngine: " + str(self.engines))
 
     def register_tool(self, tool_info):
         self.tools.append(tool_info)
@@ -74,14 +74,12 @@ class Registry(object):
         for f in os.listdir(pp_dir):
             if f == ".tsr" and os.path.isfile(os.path.join(pp_dir, "__init__.py")):
                 # TODO: this is a TSR extension directory
-                print("TSR plugin (" + os.path.join(pp_dir, f) + ")")
+                messaging.verbose_note("TSR plugin (" + os.path.join(pp_dir, f) + ")", 3)
                 import importlib.util
-                print("--> load " + pp_dir)
                 spec = importlib.util.spec_from_file_location(
                     "vlsim.tsr", 
                     os.path.join(pp_dir, "__init__.py"),
                     submodule_search_locations=None)
-                print("<-- load " + pp_dir + " " + str(spec))
                 foo = importlib.util.module_from_spec(spec)
                 spec.loader.exec_module(foo)
 
@@ -91,7 +89,7 @@ class Registry(object):
                     line = f.readline().strip()
 
                 if line is not None and line != "":
-                    print("Process editable package: " + line)
+                    messaging.verbose_note("Process editable package: " + line, 3)
                     self._process_pythonpath_dir(line)                    
             elif not f.startswith("__") and os.path.isdir(os.path.join(pp_dir, f)):
                 self._process_pythonpath_dir(os.path.join(pp_dir, f))
